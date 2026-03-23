@@ -494,7 +494,7 @@
 
   function getData(){return scheduleData||defaultData;}
   function isLibre(t){return t==='—'||t.startsWith('—');}
-  function calcWeek(){const ref=new Date(2026,1,23);return Math.floor(Math.floor(Math.abs(today-ref)/864e5)/7)%3;}
+  function calcWeek(){const ref=new Date(2026,2,9);return Math.floor(Math.floor(Math.abs(today-ref)/864e5)/7)%3;}
   function setWeek(w){selWeek=w;autoMode=false;render();}
   function resetAuto(){autoMode=true;render();}
   function fmt(iso){if(!iso)return'';return new Date(iso).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});}
