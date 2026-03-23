@@ -405,7 +405,7 @@
           <span>📷</span>
           <span>Tomar foto o elegir de galería</span>
         </label>
-        <input type="file" id="photo-input" accept="image/*" capture="environment" onchange="handlePhoto(this)">
+        <input type="file" id="photo-input" accept="image/*" onchange="handlePhoto(this)">
         <img id="photo-preview" class="photo-preview-img" alt="Vista previa">
       </div>
       <label class="wa-row">
@@ -531,20 +531,29 @@
   }
 
   function checkOverdue(){
-    const data=getData(),overdue=[];
-    for(let i=1;i<=3;i++){
+    const data=getData(),overdue=[],cw=calcWeek();
+    // Only check days that: had a real task this week AND are within the current week cycle
+    // A "week cycle" starts on Monday. Find Monday of current week.
+    const monday=new Date(today);
+    const dayOfWeek=today.getDay()===0?7:today.getDay(); // Mon=1..Sun=7
+    monday.setDate(today.getDate()-(dayOfWeek-1));
+    monday.setHours(0,0,0,0);
+
+    for(let i=1;i<=6;i++){
       const d=new Date(today);d.setDate(d.getDate()-i);
+      // Only look back within the current week (Mon-Sun)
+      if(d<monday) break;
       const dk=d.toISOString().slice(0,10),dn=DAYS[d.getDay()];
       const entry=data.find(x=>x.day===dn);if(!entry)continue;
-      const t=entry.weeks[calcWeek()];if(!t||isLibre(t.task))continue;
-      const key=`${dk}_w${calcWeek()}_${dn}`.replace(/[^a-zA-Z0-9_]/g,'_');
+      const t=entry.weeks[cw];if(!t||isLibre(t.task))continue;
+      const key=`${dk}_w${cw}_${dn}`.replace(/[^a-zA-Z0-9_]/g,'_');
       const state=fbStates[key];
       if(!state||(!state.done&&!state.incump))overdue.push({persona:t.persona,day:dn,daysAgo:i});
     }
     const el=document.getElementById('overdue-alert');
     if(overdue.length){
       el.style.display='block';
-      el.innerHTML='⚠️ '+overdue.map(o=>`<strong>${o.persona}</strong> — ${o.day} (hace ${o.daysAgo} día${o.daysAgo>1?'s':''})`).join(' · ');
+      el.innerHTML='⚠️ Sin marcar esta semana: '+overdue.map(o=>`<strong>${o.persona}</strong> (${o.day})`).join(' · ');
     } else el.style.display='none';
   }
 
@@ -559,8 +568,16 @@
 
   // ── STORAGE ──────────────────────────────────────────────────────────────
   function stateKey(dayName){return`${dateKey}_w${selWeek}_${dayName}`.replace(/[^a-zA-Z0-9_]/g,'_');}
-  function getState(dayName){return fbStates[stateKey(dayName)]||{done:false,notes:'',time:null,incump:false,incumpTime:null,photoUrl:null};}
-  function saveState(dayName,state){db.ref(`states/${monthKey}/${stateKey(dayName)}`).set(state);updateHistory(dayName,state);}
+  function getState(dayName){
+    // Only show state if it was saved within the current week cycle
+    const key=stateKey(dayName);
+    const state=fbStates[key];
+    if(!state) return {done:false,notes:'',time:null,incump:false,incumpTime:null,photoUrl:null};
+    // Verify the saved dateKey belongs to the currently selected week rotation
+    if(state.weekIdx!==undefined && state.weekIdx!==selWeek) return {done:false,notes:'',time:null,incump:false,incumpTime:null,photoUrl:null};
+    return state;
+  }
+  function saveState(dayName,state){const s={...state,weekIdx:selWeek};db.ref(`states/${monthKey}/${stateKey(dayName)}`).set(s);updateHistory(dayName,s);}
   function getHistory(mk){const src=mk===monthKey?fbHistory:(fbAllHistory[mk]||{});return Object.values(src);}
   function updateHistory(dayName,state){
     const data=getData(),entry=data.find(d=>d.day===dayName);if(!entry)return;
