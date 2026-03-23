@@ -13,6 +13,14 @@
   body::before { content:''; position:fixed; inset:0; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E"); pointer-events:none; z-index:0; opacity:0.5; }
   .wrap { max-width:860px; margin:0 auto; padding:2rem 1.5rem 4rem; position:relative; z-index:1; }
 
+  /* SYNC INDICATOR */
+  .sync-bar { display:flex; align-items:center; gap:6px; font-size:0.65rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:1.5rem; animation:fadeUp 0.5s ease both; }
+  .sync-dot { width:7px; height:7px; border-radius:50%; background:var(--border); flex-shrink:0; transition:background 0.3s; }
+  .sync-dot.online { background:var(--green); }
+  .sync-dot.syncing { background:#F59E0B; animation:pulse 1s infinite; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
   header { border-top:3px solid var(--black); border-bottom:1px solid var(--border); padding:1.5rem 0 1.2rem; margin-bottom:2.5rem; display:flex; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; gap:1rem; animation:fadeUp 0.5s ease both; }
   .logo { font-family:'Syne',sans-serif; font-size:clamp(2.4rem,7vw,4rem); font-weight:800; line-height:0.9; letter-spacing:-0.03em; }
   .logo span { color:var(--lime); -webkit-text-stroke:1.5px var(--black); }
@@ -96,7 +104,6 @@
   .summary-header { border-top:2px solid var(--black); padding-top:1.2rem; margin-bottom:1.4rem; display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; }
   .summary-title { font-family:'Syne',sans-serif; font-size:1.3rem; font-weight:800; letter-spacing:-0.02em; }
   .summary-month { font-size:0.65rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; }
-
   .stats-row { display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1.8rem; }
   .stat-pill { background:white; border:1px solid var(--border); border-radius:6px; padding:0.45rem 0.8rem; font-size:0.68rem; display:flex; align-items:center; gap:6px; }
   .dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
@@ -112,7 +119,6 @@
   .rank-tab:last-child { border-right:none; }
   .rank-tab.active { background:var(--black); color:var(--lime); }
   .rank-tab:not(.active):hover { background:#E8E3D8; }
-
   .ranking-list { display:flex; flex-direction:column; gap:0.5rem; }
   .rank-row { display:flex; align-items:center; gap:0.9rem; background:white; border:1px solid var(--border); border-radius:8px; padding:0.75rem 1rem; }
   .rank-row.r1 { border-left:3px solid var(--red); background:#FFF5F5; }
@@ -127,7 +133,6 @@
   .rank-count span { font-size:0.62rem; color:var(--red); }
   .rank-empty { font-size:0.75rem; color:var(--muted); padding:1.2rem; text-align:center; border:1px dashed var(--border); border-radius:8px; }
 
-  /* DETALLE POR SEMANA */
   .summary-week-block { margin-bottom:1.8rem; }
   .week-block-label { font-size:0.65rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); margin-bottom:0.7rem; display:flex; align-items:center; gap:8px; }
   .week-block-label::after { content:''; flex:1; height:1px; background:var(--border); }
@@ -140,16 +145,9 @@
   .sc-zona  { font-size:0.62rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em; }
   .sc-date  { font-size:0.62rem; color:var(--muted); margin-top:1px; }
   .sc-status { font-size:0.68rem; font-weight:500; margin-top:4px; }
-  .sc-status.ok   { color:#16A34A; }
-  .sc-status.fail { color:var(--red); }
-  .sc-status.pend { color:var(--muted); }
+  .sc-status.ok{color:#16A34A;} .sc-status.fail{color:var(--red);} .sc-status.pend{color:var(--muted);}
   .sc-note { font-size:0.6rem; color:var(--muted); font-style:italic; margin-top:2px; }
-
   .summary-empty { text-align:center; padding:2.5rem 1rem; font-size:0.75rem; color:var(--muted); border:1px dashed var(--border); border-radius:8px; line-height:1.8; }
-
-  /* RESET BANNER */
-  .reset-banner { background:#FFF8E7; border:1px solid #F0D070; border-radius:6px; padding:0.8rem 1rem; margin-bottom:1.5rem; font-size:0.7rem; color:#7A6010; display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
-  .reset-banner strong { font-weight:500; }
 
   footer { margin-top:3rem; border-top:1px solid var(--border); padding-top:1rem; font-size:0.62rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; display:flex; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; }
   @keyframes fadeUp  { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
@@ -159,6 +157,12 @@
 </head>
 <body>
 <div class="wrap">
+
+  <!-- Indicador de sincronización -->
+  <div class="sync-bar">
+    <div class="sync-dot" id="sync-dot"></div>
+    <span id="sync-label">Conectando...</span>
+  </div>
 
   <header>
     <div class="logo">LIMPIE<span>ZA</span><br>DEL DEPA</div>
@@ -187,17 +191,12 @@
 
   <div class="schedule-grid" id="schedule-grid"></div>
 
-  <!-- RESUMEN MENSUAL -->
   <div class="summary-section">
     <div class="summary-header">
       <div class="summary-title">Resumen del Mes</div>
       <div class="summary-month" id="summary-month">—</div>
     </div>
-
-    <!-- Stats globales -->
     <div class="stats-row" id="stats-row"></div>
-
-    <!-- Ranking de incumplimientos -->
     <div class="ranking-block">
       <div class="ranking-header">
         <div class="ranking-label">Ranking incumplimientos</div>
@@ -208,8 +207,6 @@
       </div>
       <div class="ranking-list" id="ranking-list"></div>
     </div>
-
-    <!-- Detalle por semana -->
     <div id="summary-body"></div>
   </div>
 
@@ -251,14 +248,34 @@
   </div>
 </div>
 
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
 <script>
+  // ── FIREBASE CONFIG ───────────────────────────────────────────────────────
+  const firebaseConfig = {
+    apiKey: "AIzaSyA8upE7uMoaWkaFoa_iKbcNlNNaJTP0_0A",
+    authDomain: "limpieza-depa.firebaseapp.com",
+    databaseURL: "https://limpieza-depa-default-rtdb.firebaseio.com",
+    projectId: "limpieza-depa",
+    storageBucket: "limpieza-depa.firebasestorage.app",
+    messagingSenderId: "1025710426444",
+    appId: "1:1025710426444:web:07b81ab7167c1006dde7e9"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  // ── ESTADO GLOBAL (se llena desde Firebase en tiempo real) ────────────────
   const DAYS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
   const today = new Date();
   const todayName = DAYS[today.getDay()];
-  const dateKey  = today.toISOString().slice(0,10);   // YYYY-MM-DD
-  const monthKey = dateKey.slice(0,7);                // YYYY-MM
+  const dateKey  = today.toISOString().slice(0,10);
+  const monthKey = dateKey.slice(0,7);
 
   let selWeek = 0, autoMode = true, modalDayIdx = -1, rankMode = 'mes';
+  let fbStates = {};   // cache local de estados desde Firebase
+  let fbHistory = {};  // cache local del historial del mes
 
   const data = [
     { day:'Lunes', weeks:[
@@ -290,47 +307,76 @@
     ]}
   ];
 
-  // ── RESET AUTOMÁTICO DE MES ──────────────────────────────────────────────
-  // Guarda el último mes visto. Si cambió, limpia los estados del día y el historial.
-  function checkMonthReset() {
-    const lastMonth = localStorage.getItem('limpieza_last_month');
-    if (lastMonth && lastMonth !== monthKey) {
-      // Nuevo mes: borrar TODO el historial y estados del mes anterior
-      const keysToDelete = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k && (k.startsWith('limpieza_') && !k.startsWith('limpieza_last_month'))) {
-          keysToDelete.push(k);
-        }
+  // ── FIREBASE: ESCUCHAR CAMBIOS EN TIEMPO REAL ─────────────────────────────
+  function initFirebase() {
+    setSyncStatus('syncing');
+
+    // Escuchar estados del día (se actualiza automáticamente para todos)
+    db.ref(`states/${monthKey}`).on('value', snap => {
+      fbStates = snap.val() || {};
+      render();
+      setSyncStatus('online');
+    });
+
+    // Escuchar historial del mes
+    db.ref(`history/${monthKey}`).on('value', snap => {
+      fbHistory = snap.val() || {};
+      renderSummary();
+    });
+
+    // Detectar conexión
+    db.ref('.info/connected').on('value', snap => {
+      setSyncStatus(snap.val() ? 'online' : 'offline');
+    });
+
+    // Reset automático de mes: limpiar datos del mes anterior
+    const lastMonthRef = db.ref('meta/lastMonth');
+    lastMonthRef.once('value', snap => {
+      const lastMonth = snap.val();
+      if (lastMonth && lastMonth !== monthKey) {
+        // Borrar estados e historial del mes anterior en Firebase
+        db.ref(`states/${lastMonth}`).remove();
+        db.ref(`history/${lastMonth}`).remove();
       }
-      keysToDelete.forEach(k => localStorage.removeItem(k));
-    }
-    localStorage.setItem('limpieza_last_month', monthKey);
+      lastMonthRef.set(monthKey);
+    });
   }
 
-  // ── STORAGE ──────────────────────────────────────────────────────────────
-  function getState(dayName) {
-    try { return JSON.parse(localStorage.getItem(`limpieza_${dateKey}_${dayName}`)) || {done:false,notes:'',time:null,incump:false,incumpTime:null}; }
-    catch { return {done:false,notes:'',time:null,incump:false,incumpTime:null}; }
+  function setSyncStatus(status) {
+    const dot = document.getElementById('sync-dot');
+    const label = document.getElementById('sync-label');
+    dot.className = 'sync-dot ' + status;
+    if (status === 'online')  { label.textContent = 'Sincronizado · en tiempo real'; }
+    if (status === 'syncing') { label.textContent = 'Sincronizando...'; }
+    if (status === 'offline') { label.textContent = 'Sin conexión'; }
   }
+
+  // ── STORAGE: LEER Y ESCRIBIR EN FIREBASE ──────────────────────────────────
+  function getState(dayName) {
+    const key = `${dateKey}_${dayName}`.replace(/[^a-zA-Z0-9_]/g, '_');
+    return fbStates[key] || {done:false, notes:'', time:null, incump:false, incumpTime:null};
+  }
+
   function saveState(dayName, state) {
-    localStorage.setItem(`limpieza_${dateKey}_${dayName}`, JSON.stringify(state));
+    const key = `${dateKey}_${dayName}`.replace(/[^a-zA-Z0-9_]/g, '_');
+    db.ref(`states/${monthKey}/${key}`).set(state);
     updateHistory(dayName, state);
   }
 
-  function getHistory() { try { return JSON.parse(localStorage.getItem(`limpieza_history_${monthKey}`)) || []; } catch { return []; } }
+  function getHistory() {
+    return Object.values(fbHistory);
+  }
+
   function updateHistory(dayName, state) {
     const entry = data.find(d => d.day === dayName);
     if (!entry) return;
     const t = entry.weeks[calcWeek()];
     if (!t || isLibre(t.task)) return;
-    const hist = getHistory();
-    const i = hist.findIndex(h => h.dateKey === dateKey && h.dayName === dayName);
+    const key = `${dateKey}_${dayName}`.replace(/[^a-zA-Z0-9_]/g, '_');
     const rec = { dateKey, dayName, weekIdx:calcWeek(), persona:t.persona, zona:t.zona,
-                  done:state.done, time:state.time, incump:state.incump,
-                  incumpTime:state.incumpTime, notes:state.notes };
-    if (i >= 0) hist[i] = rec; else hist.push(rec);
-    localStorage.setItem(`limpieza_history_${monthKey}`, JSON.stringify(hist));
+                  done:state.done, time:state.time||null, incump:state.incump,
+                  incumpTime:state.incumpTime||null, notes:state.notes||'' };
+    db.ref(`history/${monthKey}/${key}`).set(rec);
   }
 
   // ── UTILS ─────────────────────────────────────────────────────────────────
@@ -345,103 +391,81 @@
 
   // ── RANKING ───────────────────────────────────────────────────────────────
   function switchRank(mode) {
-    rankMode = mode;
-    document.getElementById('tab-mes').classList.toggle('active', mode==='mes');
-    document.getElementById('tab-sem').classList.toggle('active', mode==='sem');
+    rankMode=mode;
+    document.getElementById('tab-mes').classList.toggle('active',mode==='mes');
+    document.getElementById('tab-sem').classList.toggle('active',mode==='sem');
     renderRanking();
   }
 
   function buildRanking(records) {
-    // Agrupar incumplimientos por persona
-    const counts = {};
-    records.filter(h => h.incump).forEach(h => {
-      // Para personas múltiples (ej "Edgar y Esmeralda") separar
-      const personas = h.persona.split(/\s+y\s+/i);
-      personas.forEach(p => {
-        p = p.trim();
-        if (!counts[p]) counts[p] = { count:0, zonas:[] };
+    const counts={};
+    records.filter(h=>h.incump).forEach(h=>{
+      h.persona.split(/\s+y\s+/i).forEach(p=>{
+        p=p.trim();
+        if(!counts[p]) counts[p]={count:0,zonas:[]};
         counts[p].count++;
-        if (!counts[p].zonas.includes(h.zona)) counts[p].zonas.push(h.zona);
+        if(!counts[p].zonas.includes(h.zona)) counts[p].zonas.push(h.zona);
       });
     });
-    return Object.entries(counts)
-      .map(([persona, v]) => ({persona, count:v.count, zonas:v.zonas}))
-      .sort((a,b) => b.count - a.count);
+    return Object.entries(counts).map(([persona,v])=>({persona,count:v.count,zonas:v.zonas})).sort((a,b)=>b.count-a.count);
   }
 
   function renderRanking() {
-    const hist = getHistory();
-    let records;
-    if (rankMode === 'sem') {
-      // Solo la semana actual (weekIdx = selWeek)
-      records = hist.filter(h => h.weekIdx === selWeek);
-    } else {
-      records = hist;
-    }
-    const ranking = buildRanking(records);
-    const el = document.getElementById('ranking-list');
-    if (ranking.length === 0) {
-      el.innerHTML = `<div class="rank-empty">🎉 Nadie ha incumplido ${rankMode==='sem'?'esta semana':'este mes'}.</div>`;
-      return;
-    }
-    const medals = ['r1','r2','r3'];
-    el.innerHTML = ranking.map((r,i) => `
+    const hist=getHistory();
+    const records=rankMode==='sem'?hist.filter(h=>h.weekIdx===selWeek):hist;
+    const ranking=buildRanking(records);
+    const el=document.getElementById('ranking-list');
+    if(!ranking.length){ el.innerHTML=`<div class="rank-empty">🎉 Nadie ha incumplido ${rankMode==='sem'?'esta semana':'este mes'}.</div>`; return; }
+    const medals=['r1','r2','r3'];
+    el.innerHTML=ranking.map((r,i)=>`
       <div class="rank-row ${medals[i]||''}">
         <div class="rank-pos">${i+1}</div>
-        <div>
-          <div class="rank-persona">${r.persona}</div>
-          <div class="rank-detail">${r.zonas.join(', ')}</div>
-        </div>
-        <div class="rank-count">
-          <strong>${r.count}</strong>
-          <span>incumplimiento${r.count!==1?'s':''}</span>
-        </div>
-      </div>
-    `).join('');
+        <div><div class="rank-persona">${r.persona}</div><div class="rank-detail">${r.zonas.join(', ')}</div></div>
+        <div class="rank-count"><strong>${r.count}</strong><span>incumplimiento${r.count!==1?'s':''}</span></div>
+      </div>`).join('');
   }
 
   // ── MODAL ─────────────────────────────────────────────────────────────────
   function openModal(idx) {
-    modalDayIdx = idx;
-    const d = data[idx], t = d.weeks[selWeek], state = getState(d.day);
-    document.getElementById('modal-name').textContent = t.persona || d.day;
-    document.getElementById('modal-day-info').textContent = `${d.day.toUpperCase()} · SEM ${selWeek+1}`;
-    const badge = document.getElementById('modal-badge');
-    badge.textContent = t.zona || 'Libre';
-    badge.className = `modal-zone-badge ${zoneBadgeClass(t.zona||'')}`;
-    document.getElementById('modal-notes').value = state.notes || '';
-    const btn = document.getElementById('btn-done');
-    btn.textContent = state.done ? '✓ Marcar como Pendiente' : 'Marcar como Hecho';
-    btn.className = `btn btn-done${state.done?' is-done-state':''}`;
+    modalDayIdx=idx;
+    const d=data[idx],t=d.weeks[selWeek],state=getState(d.day);
+    document.getElementById('modal-name').textContent=t.persona||d.day;
+    document.getElementById('modal-day-info').textContent=`${d.day.toUpperCase()} · SEM ${selWeek+1}`;
+    const badge=document.getElementById('modal-badge');
+    badge.textContent=t.zona||'Libre'; badge.className=`modal-zone-badge ${zoneBadgeClass(t.zona||'')}`;
+    document.getElementById('modal-notes').value=state.notes||'';
+    const btn=document.getElementById('btn-done');
+    btn.textContent=state.done?'✓ Marcar como Pendiente':'Marcar como Hecho';
+    btn.className=`btn btn-done${state.done?' is-done-state':''}`;
     document.getElementById('modal').classList.add('open');
   }
   function openTodayModal() {
-    const idx = data.findIndex(d => d.day===todayName);
-    if (idx===-1 || isLibre(data[idx].weeks[selWeek].task)) return;
+    const idx=data.findIndex(d=>d.day===todayName);
+    if(idx===-1||isLibre(data[idx].weeks[selWeek].task)) return;
     openModal(idx);
   }
   function closeModal() { document.getElementById('modal').classList.remove('open'); }
   function handleOverlayClick(e) { if(e.target===document.getElementById('modal')) closeModal(); }
 
   function markDone() {
-    if (modalDayIdx===-1) return;
-    const d=data[modalDayIdx], t=d.weeks[selWeek], state=getState(d.day);
+    if(modalDayIdx===-1) return;
+    const d=data[modalDayIdx],t=d.weeks[selWeek],state=getState(d.day);
     const notes=document.getElementById('modal-notes').value.trim();
     const waChecked=document.getElementById('wa-notify').checked;
     const newDone=!state.done, newTime=newDone?new Date().toISOString():null;
     saveState(d.day,{done:newDone,time:newTime,notes,incump:newDone?false:state.incump,incumpTime:newDone?null:state.incumpTime});
     if(waChecked&&newDone) window.open(waLink(`✅ *Limpieza completada*\n${t.persona} limpió el ${t.zona} el ${d.day} (Sem ${selWeek+1}) a las ${fmt(newTime)}${notes?'\n📝 '+notes:''}`), '_blank');
-    closeModal(); render(); renderSummary();
+    closeModal();
   }
 
   function reportIncump() {
-    if (modalDayIdx===-1) return;
-    const d=data[modalDayIdx], t=d.weeks[selWeek];
+    if(modalDayIdx===-1) return;
+    const d=data[modalDayIdx],t=d.weeks[selWeek];
     const notes=document.getElementById('modal-notes').value.trim();
-    const state=getState(d.day), incumpTime=new Date().toISOString();
+    const state=getState(d.day),incumpTime=new Date().toISOString();
     saveState(d.day,{done:false,time:null,incump:true,incumpTime,notes});
     showToast(`⚠️ Incumplimiento registrado — ${t.persona} (${t.zona})`);
-    closeModal(); render(); renderSummary();
+    closeModal();
   }
 
   function showToast(msg) {
@@ -459,14 +483,14 @@
     document.getElementById('reset-btn').style.display=autoMode?'none':'block';
     document.querySelectorAll('.week-tab').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.w)===selWeek));
 
-    const te=data.find(d=>d.day===todayName), tt=te?te.weeks[selWeek]:{task:'— libre',sub:'',zona:''};
-    const tl=isLibre(tt.task), ts=te?getState(te.day):{done:false,time:null};
+    const te=data.find(d=>d.day===todayName),tt=te?te.weeks[selWeek]:{task:'— libre',sub:'',zona:''};
+    const tl=isLibre(tt.task),ts=te?getState(te.day):{done:false,time:null};
     const card=document.getElementById('today-card');
     document.getElementById('today-task').textContent=tl?'🎉 Día libre':tt.task;
     document.getElementById('today-details').textContent=tl?'Sin tareas hoy — a descansar.':tt.sub;
-    const db=document.getElementById('today-done-badge');
-    db.textContent=ts.done&&ts.time?`✓ Completada a las ${fmt(ts.time)}`:'✓ Completada';
-    db.style.display=ts.done?'inline-flex':'none';
+    const db2=document.getElementById('today-done-badge');
+    db2.textContent=ts.done&&ts.time?`✓ Completada a las ${fmt(ts.time)}`:'✓ Completada';
+    db2.style.display=ts.done?'inline-flex':'none';
     document.getElementById('today-tap-hint').style.display=tl?'none':'block';
     document.getElementById('today-label').textContent=ts.done?'✓ Completada':'▸ Tarea de hoy';
     card.className=`today-card${ts.done?' is-done':''}`;
@@ -493,22 +517,20 @@
   function renderSummary() {
     const hist=getHistory();
     document.getElementById('summary-month').textContent=today.toLocaleDateString('es-MX',{month:'long',year:'numeric'}).toUpperCase();
-    const done=hist.filter(h=>h.done).length, incump=hist.filter(h=>h.incump).length, pend=hist.length-done-incump;
+    const done=hist.filter(h=>h.done).length,incump=hist.filter(h=>h.incump).length,pend=hist.length-done-incump;
     document.getElementById('stats-row').innerHTML=`
       <div class="stat-pill"><span class="dot dot-green"></span>${done} completada${done!==1?'s':''}</div>
       <div class="stat-pill"><span class="dot dot-red"></span>${incump} incumplimiento${incump!==1?'s':''}</div>
-      <div class="stat-pill"><span class="dot dot-gray"></span>${pend} pendiente${pend!==1?'s':''}</div>
-    `;
+      <div class="stat-pill"><span class="dot dot-gray"></span>${pend} pendiente${pend!==1?'s':''}</div>`;
     renderRanking();
-
     const body=document.getElementById('summary-body');
     body.innerHTML='';
-    if(hist.length===0){ body.innerHTML=`<div class="summary-empty">Aún no hay registros este mes.<br>Las tareas marcadas aparecerán aquí por semana.</div>`; return; }
+    if(!hist.length){ body.innerHTML=`<div class="summary-empty">Aún no hay registros este mes.<br>Las tareas marcadas aparecerán aquí por semana.</div>`; return; }
     for(let w=0;w<3;w++){
       const recs=hist.filter(h=>h.weekIdx===w);
       if(!recs.length) continue;
       const block=document.createElement('div'); block.className='summary-week-block';
-      const label=document.createElement('div'); label.className='week-block-label'; label.textContent=`Semana ${w+1}`; block.appendChild(label);
+      const lbl=document.createElement('div'); lbl.className='week-block-label'; lbl.textContent=`Semana ${w+1}`; block.appendChild(lbl);
       const cards=document.createElement('div'); cards.className='summary-cards';
       recs.forEach(h=>{
         const c=document.createElement('div');
@@ -521,7 +543,7 @@
     }
   }
 
-  window.onload = () => { checkMonthReset(); render(); renderSummary(); };
+  window.onload = () => { render(); initFirebase(); };
 </script>
 </body>
 </html>
