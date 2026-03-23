@@ -285,6 +285,43 @@
   .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#1C1C1E; color:white; font-size:13px; font-weight:500; padding:12px 20px; border-radius:20px; box-shadow:0 4px 20px rgba(0,0,0,0.3); z-index:999; white-space:nowrap; transition:opacity 0.3s; max-width:88vw; text-align:center; opacity:0; pointer-events:none; }
   .toast.show { opacity:1; }
 
+
+  /* ── CHAT ── */
+  .chat-wrap { padding:24px 16px 0; }
+  .chat-card { background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+  .chat-header { padding:14px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .chat-title { font-size:16px; font-weight:700; }
+  .chat-you { font-size:12px; color:var(--text2); display:flex; align-items:center; gap:6px; }
+  .chat-you-name { font-weight:600; color:var(--purple); }
+  .chat-you-change { font-size:11px; color:var(--text3); cursor:pointer; text-decoration:underline; }
+  .chat-messages { height:280px; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:8px; scroll-behavior:smooth; }
+  .chat-messages::-webkit-scrollbar { width:4px; }
+  .chat-messages::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+  .chat-bubble { max-width:80%; display:flex; flex-direction:column; gap:2px; }
+  .chat-bubble.mine { align-self:flex-end; align-items:flex-end; }
+  .chat-bubble.theirs { align-self:flex-start; align-items:flex-start; }
+  .bubble-name { font-size:11px; font-weight:600; color:var(--text2); padding:0 4px; }
+  .bubble-name.mine-name { color:var(--purple); }
+  .bubble-body { padding:9px 13px; border-radius:18px; font-size:14px; line-height:1.4; word-break:break-word; }
+  .bubble-body.mine-body { background:var(--grad2); color:white; border-bottom-right-radius:4px; }
+  .bubble-body.theirs-body { background:var(--surface2); color:var(--text); border-bottom-left-radius:4px; }
+  .bubble-time { font-size:10px; color:var(--text3); padding:0 4px; }
+  .chat-empty { text-align:center; color:var(--text3); font-size:13px; padding:40px 16px; }
+  .chat-input-row { padding:10px 12px; border-top:1px solid var(--border); display:flex; gap:8px; align-items:flex-end; }
+  .chat-input { flex:1; background:var(--surface2); border:1.5px solid var(--border); border-radius:20px; padding:9px 14px; font-family:'Inter',sans-serif; font-size:14px; color:var(--text); outline:none; resize:none; max-height:80px; line-height:1.4; transition:border-color 0.15s; }
+  .chat-input:focus { border-color:var(--purple); }
+  .chat-send-btn { width:38px; height:38px; border-radius:50%; background:var(--grad2); border:none; color:white; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:opacity 0.15s; }
+  .chat-send-btn:disabled { opacity:0.4; }
+
+  /* NAME MODAL */
+  .name-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(8px); z-index:150; display:none; align-items:center; justify-content:center; padding:24px; }
+  .name-overlay.open { display:flex; }
+  .name-box { background:var(--surface); border-radius:24px; padding:28px 24px; width:100%; max-width:320px; text-align:center; }
+  .name-box-title { font-size:20px; font-weight:800; margin-bottom:6px; }
+  .name-box-sub { font-size:14px; color:var(--text2); margin-bottom:20px; }
+  .name-input { width:100%; background:var(--surface2); border:1.5px solid var(--border); border-radius:var(--radius-sm); padding:12px 14px; font-family:'Inter',sans-serif; font-size:16px; color:var(--text); outline:none; text-align:center; margin-bottom:12px; }
+  .name-input:focus { border-color:var(--purple); }
+  .name-submit-btn { width:100%; background:var(--grad); color:white; border:none; border-radius:var(--radius-sm); padding:13px; font-size:15px; font-weight:700; cursor:pointer; }
   @keyframes sheetUp { from{transform:translateY(60px);opacity:0} to{transform:translateY(0);opacity:1} }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
   @media(min-width:430px){ .app,.modal-sheet{ border-left:1px solid var(--border); border-right:1px solid var(--border); } }
@@ -360,6 +397,39 @@
   </div>
 
   <!-- ADMIN -->
+
+  <!-- CHAT -->
+  <div class="chat-wrap">
+    <div class="chat-card">
+      <div class="chat-header">
+        <div class="chat-title">💬 Chat del Depa</div>
+        <div class="chat-you">
+          <span>Tú: <span class="chat-you-name" id="chat-you-name">—</span></span>
+          <span class="chat-you-change" onclick="changeName()">cambiar</span>
+        </div>
+      </div>
+      <div class="chat-messages" id="chat-messages">
+        <div class="chat-empty">Sin mensajes aún.<br>¡Sé el primero en escribir! 👋</div>
+      </div>
+      <div class="chat-input-row">
+        <textarea class="chat-input" id="chat-input" placeholder="Escribe un mensaje..." rows="1"
+          oninput="autoResize(this)" onkeydown="handleChatKey(event)"></textarea>
+        <button class="chat-send-btn" id="chat-send-btn" onclick="sendMessage()">➤</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAME MODAL -->
+  <div class="name-overlay" id="name-overlay">
+    <div class="name-box">
+      <div class="name-box-title">👋 ¡Hola!</div>
+      <div class="name-box-sub">¿Cómo te llamas? Así sabremos quién escribe en el chat.</div>
+      <input class="name-input" id="name-input" placeholder="Tu nombre..." maxlength="20"
+        onkeydown="if(event.key==='Enter')saveName()">
+      <button class="name-submit-btn" onclick="saveName()">Entrar al chat</button>
+    </div>
+  </div>
+
   <div class="admin-wrap">
     <div class="admin-card">
       <div class="admin-card-title">⚙️ Administración</div>
@@ -894,7 +964,86 @@
     }
   }
 
-  window.onload=()=>{render();initFirebase();};
+
+  // ── CHAT ─────────────────────────────────────────────────────────────────
+  let myName = localStorage.getItem('chatName') || '';
+
+  function initChat() {
+    document.getElementById('chat-you-name').textContent = myName || '—';
+    if (!myName) {
+      document.getElementById('name-overlay').classList.add('open');
+    }
+    // Listen for messages in real time
+    db.ref('chat').limitToLast(60).on('value', snap => {
+      const msgs = snap.val() || {};
+      renderMessages(Object.values(msgs).sort((a,b) => a.ts - b.ts));
+    });
+  }
+
+  function saveName() {
+    const val = document.getElementById('name-input').value.trim();
+    if (!val) return;
+    myName = val;
+    localStorage.setItem('chatName', val);
+    document.getElementById('chat-you-name').textContent = val;
+    document.getElementById('name-overlay').classList.remove('open');
+  }
+
+  function changeName() {
+    document.getElementById('name-input').value = myName;
+    document.getElementById('name-overlay').classList.add('open');
+  }
+
+  function renderMessages(msgs) {
+    const el = document.getElementById('chat-messages');
+    if (!msgs.length) {
+      el.innerHTML = '<div class="chat-empty">Sin mensajes aún.<br>¡Sé el primero en escribir! 👋</div>';
+      return;
+    }
+    el.innerHTML = msgs.map(m => {
+      const mine = m.name === myName;
+      const time = new Date(m.ts).toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'});
+      return `
+        <div class="chat-bubble ${mine?'mine':'theirs'}">
+          ${!mine ? `<div class="bubble-name">${m.name}</div>` : ''}
+          <div class="bubble-body ${mine?'mine-body':'theirs-body'}">${escapeHtml(m.text)}</div>
+          <div class="bubble-time">${mine?'Tú · ':''}${time}</div>
+        </div>`;
+    }).join('');
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function escapeHtml(text) {
+    return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function sendMessage() {
+    if (!myName) { document.getElementById('name-overlay').classList.add('open'); return; }
+    const input = document.getElementById('chat-input');
+    const text = input.value.trim();
+    if (!text) return;
+    db.ref('chat').push({ name: myName, text, ts: Date.now() });
+    input.value = '';
+    input.style.height = 'auto';
+    // Keep only last 100 messages
+    db.ref('chat').once('value', snap => {
+      const keys = Object.keys(snap.val() || {});
+      if (keys.length > 100) {
+        keys.slice(0, keys.length - 100).forEach(k => db.ref('chat/' + k).remove());
+      }
+    });
+  }
+
+  function handleChatKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  }
+
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 80) + 'px';
+  }
+
+  window.onload=()=>{ render(); initFirebase(); initChat(); };
 </script>
 </body>
 </html>
