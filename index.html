@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LIMPIEZA — Horario del Depa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root { --cream:#F5F0E8; --black:#111110; --lime:#CAFF4D; --muted:#7A7670; --border:#D4CFC5; --green:#22C55E; --red:#EF4444; --wa:#25D366; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--cream); color:var(--black); font-family:'DM Mono',monospace; min-height:100vh; overflow-x:hidden; }
+  body::before { content:''; position:fixed; inset:0; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E"); pointer-events:none; z-index:0; opacity:0.5; }
+  .wrap { max-width:860px; margin:0 auto; padding:2rem 1.5rem 4rem; position:relative; z-index:1; }
+
+  header { border-top:3px solid var(--black); border-bottom:1px solid var(--border); padding:1.5rem 0 1.2rem; margin-bottom:2.5rem; display:flex; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; gap:1rem; animation:fadeUp 0.5s ease both; }
+  .logo { font-family:'Syne',sans-serif; font-size:clamp(2.4rem,7vw,4rem); font-weight:800; line-height:0.9; letter-spacing:-0.03em; }
+  .logo span { color:var(--lime); -webkit-text-stroke:1.5px var(--black); }
+  .meta { text-align:right; font-size:0.7rem; color:var(--muted); line-height:1.8; text-transform:uppercase; letter-spacing:0.08em; }
+  .meta strong { color:var(--black); font-weight:500; }
+
+  .today-card { background:var(--black); color:var(--cream); border-radius:4px; padding:2rem 2rem 1.8rem; margin-bottom:2rem; position:relative; overflow:hidden; animation:fadeUp 0.5s 0.1s ease both; cursor:pointer; transition:opacity 0.2s; }
+  .today-card:hover { opacity:0.92; }
+  .today-card.is-done { background:#1a2e1a; }
+  .today-card::after { content:'HOY'; position:absolute; top:-0.2rem; right:1.5rem; font-family:'Syne',sans-serif; font-size:5rem; font-weight:800; color:rgba(255,255,255,0.05); letter-spacing:-0.05em; pointer-events:none; }
+  .today-label { font-size:0.65rem; text-transform:uppercase; letter-spacing:0.12em; color:var(--lime); margin-bottom:0.6rem; }
+  .today-card.is-done .today-label { color:#86efac; }
+  .today-task { font-family:'Syne',sans-serif; font-size:clamp(1.5rem,5vw,2.4rem); font-weight:700; line-height:1.1; margin-bottom:0.5rem; }
+  .today-details { font-size:0.75rem; color:#9A9690; font-style:italic; }
+  .done-badge { display:inline-flex; align-items:center; gap:5px; background:#16a34a; color:white; font-size:0.65rem; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; padding:3px 10px; border-radius:2px; margin-top:0.8rem; }
+  .tap-hint { font-size:0.6rem; color:rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:0.1em; margin-top:1rem; }
+
+  .controls { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem; animation:fadeUp 0.5s 0.15s ease both; }
+  .week-tabs { display:flex; border:1px solid var(--black); border-radius:3px; overflow:hidden; }
+  .week-tab { background:transparent; border:none; border-right:1px solid var(--black); color:var(--black); font-family:'DM Mono',monospace; font-size:0.7rem; padding:0.5rem 1.1rem; cursor:pointer; text-transform:uppercase; letter-spacing:0.08em; transition:background 0.15s; }
+  .week-tab:last-child { border-right:none; }
+  .week-tab.active { background:var(--black); color:var(--lime); }
+  .week-tab:not(.active):hover { background:#E8E3D8; }
+  #reset-btn { background:none; border:none; font-family:'DM Mono',monospace; font-size:0.65rem; color:var(--muted); cursor:pointer; text-decoration:underline; text-transform:uppercase; letter-spacing:0.08em; display:none; }
+
+  .schedule-grid { display:grid; gap:0; border:1px solid var(--black); border-radius:3px; overflow:hidden; animation:fadeUp 0.5s 0.2s ease both; }
+  .day-row { display:grid; grid-template-columns:100px 1fr auto; align-items:stretch; border-bottom:1px solid var(--border); transition:background 0.15s; background:white; cursor:pointer; }
+  .day-row:last-child { border-bottom:none; }
+  .day-row:not(.is-libre):hover { background:#FAFAF7; }
+  .day-row.is-libre { cursor:default; }
+  .day-row.is-today { background:var(--cream); border-left:3px solid var(--lime); }
+  .day-row.is-done { background:#f0fdf4; }
+  .day-row.is-done.is-today { border-left-color:var(--green); }
+  .day-row.is-incump { background:#FFF5F5; }
+  .day-row.is-incump.is-today { border-left-color:var(--red); }
+  .day-row.is-incump .check-circle { border-color:#FCA5A5; color:var(--red); }
+  .day-name-cell { padding:1rem 0.8rem; border-right:1px solid var(--border); display:flex; flex-direction:column; justify-content:center; }
+  .day-tag { font-size:0.6rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); margin-bottom:0.2rem; }
+  .is-today .day-tag { color:var(--black); font-weight:500; }
+  .day-name { font-family:'Syne',sans-serif; font-size:0.9rem; font-weight:700; }
+  .task-cell { padding:0.9rem 1.2rem; display:flex; flex-direction:column; justify-content:center; }
+  .task-name { font-family:'Syne',sans-serif; font-size:1rem; font-weight:700; line-height:1.2; }
+  .task-name.libre { color:var(--border); font-style:italic; font-family:'DM Mono',monospace; font-size:0.8rem; font-weight:400; }
+  .task-name.done-text { text-decoration:line-through; opacity:0.45; }
+  .task-sub { font-size:0.65rem; color:var(--muted); margin-top:0.2rem; }
+  .task-time { font-size:0.6rem; color:var(--green); margin-top:0.25rem; letter-spacing:0.04em; }
+  .task-time.is-incump { color:var(--red); }
+  .status-cell { padding:0.8rem 1rem; display:flex; align-items:center; border-left:1px solid var(--border); }
+  .check-circle { width:28px; height:28px; border-radius:50%; border:1.5px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:0.75rem; transition:all 0.2s; color:transparent; }
+  .day-row.is-done .check-circle { background:var(--green); border-color:var(--green); color:white; }
+
+  /* MODAL */
+  .modal-overlay { position:fixed; inset:0; background:rgba(17,17,16,0.65); backdrop-filter:blur(6px); z-index:100; display:none; align-items:flex-end; justify-content:center; }
+  .modal-overlay.open { display:flex; }
+  .modal-box { background:white; width:100%; max-width:480px; border-radius:20px 20px 0 0; padding:0 0 2rem; box-shadow:0 -4px 40px rgba(0,0,0,0.15); animation:slideUp 0.28s cubic-bezier(0.32,0.72,0,1) both; max-height:92vh; overflow-y:auto; }
+  @media(min-width:520px){ .modal-overlay{align-items:center;padding:1.5rem;} .modal-box{border-radius:16px;max-height:85vh;} }
+  .modal-handle { width:36px; height:4px; background:#E2E8F0; border-radius:2px; margin:12px auto 0; }
+  .modal-header { padding:1.4rem 1.6rem 0; }
+  .modal-name { font-family:'Syne',sans-serif; font-size:1.6rem; font-weight:800; }
+  .modal-zone-row { display:flex; align-items:center; gap:8px; margin-top:4px; }
+  .modal-zone-badge { font-size:0.65rem; font-weight:500; text-transform:uppercase; letter-spacing:0.1em; padding:3px 10px; border-radius:20px; }
+  .badge-cocina{background:#FEF9C3;color:#854D0E;} .badge-baño{background:#EDE9FE;color:#5B21B6;} .badge-patio{background:#DCFCE7;color:#166534;} .badge-libre{background:#F1F5F9;color:#64748B;}
+  .modal-day-info { font-size:0.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em; font-weight:500; }
+  .modal-body { padding:1.4rem 1.6rem 0; }
+  .modal-section-label { font-size:0.6rem; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted); margin-bottom:0.5rem; }
+  .modal-textarea { width:100%; border:1px solid var(--border); border-radius:8px; padding:0.7rem 0.9rem; font-family:'DM Mono',monospace; font-size:0.78rem; color:var(--black); resize:vertical; min-height:90px; background:#FAFAF9; outline:none; transition:border-color 0.15s; line-height:1.6; }
+  .modal-textarea:focus { border-color:var(--black); }
+  .wa-toggle { display:flex; align-items:center; gap:10px; background:#F0FDF4; border:1px solid #BBF7D0; border-radius:8px; padding:0.7rem 0.9rem; margin-top:1rem; cursor:pointer; }
+  .wa-toggle input[type=checkbox] { width:16px; height:16px; accent-color:var(--wa); cursor:pointer; }
+  .wa-toggle-label { font-size:0.75rem; color:#166534; font-weight:500; display:flex; align-items:center; gap:6px; }
+  .modal-actions { padding:1.2rem 1.6rem 0; display:flex; flex-direction:column; gap:0.6rem; }
+  .btn-row { display:flex; gap:0.6rem; }
+  .btn { border-radius:8px; font-family:'DM Mono',monospace; font-size:0.75rem; font-weight:500; padding:0.75rem 1rem; cursor:pointer; text-transform:uppercase; letter-spacing:0.08em; transition:all 0.15s; border:none; text-align:center; }
+  .btn-cancel{background:#F1F5F9;color:#64748B;flex:1;} .btn-cancel:hover{background:#E2E8F0;}
+  .btn-done{background:#7C3AED;color:white;flex:2;} .btn-done:hover{background:#6D28D9;}
+  .btn-done.is-done-state{background:#16A34A;} .btn-done.is-done-state:hover{background:#15803D;}
+  .btn-incump{background:#FFF7ED;color:#C2410C;border:1px solid #FED7AA;width:100%;} .btn-incump:hover{background:#FFEDD5;}
+
+  /* RESUMEN */
+  .summary-section { margin-top:3.5rem; animation:fadeUp 0.5s 0.3s ease both; }
+  .summary-header { border-top:2px solid var(--black); padding-top:1.2rem; margin-bottom:1.4rem; display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; }
+  .summary-title { font-family:'Syne',sans-serif; font-size:1.3rem; font-weight:800; letter-spacing:-0.02em; }
+  .summary-month { font-size:0.65rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; }
+
+  .stats-row { display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1.8rem; }
+  .stat-pill { background:white; border:1px solid var(--border); border-radius:6px; padding:0.45rem 0.8rem; font-size:0.68rem; display:flex; align-items:center; gap:6px; }
+  .dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .dot-green{background:var(--green);} .dot-red{background:var(--red);} .dot-gray{background:var(--border);}
+
+  /* RANKING */
+  .ranking-block { margin-bottom:2rem; }
+  .ranking-header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.8rem; margin-bottom:1rem; }
+  .ranking-label { font-size:0.65rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); display:flex; align-items:center; gap:8px; }
+  .ranking-label::after { content:''; flex:1; height:1px; background:var(--border); min-width:20px; }
+  .rank-tabs { display:flex; border:1px solid var(--black); border-radius:3px; overflow:hidden; }
+  .rank-tab { background:transparent; border:none; border-right:1px solid var(--black); color:var(--black); font-family:'DM Mono',monospace; font-size:0.65rem; padding:0.35rem 0.8rem; cursor:pointer; text-transform:uppercase; letter-spacing:0.08em; transition:background 0.15s; }
+  .rank-tab:last-child { border-right:none; }
+  .rank-tab.active { background:var(--black); color:var(--lime); }
+  .rank-tab:not(.active):hover { background:#E8E3D8; }
+
+  .ranking-list { display:flex; flex-direction:column; gap:0.5rem; }
+  .rank-row { display:flex; align-items:center; gap:0.9rem; background:white; border:1px solid var(--border); border-radius:8px; padding:0.75rem 1rem; }
+  .rank-row.r1 { border-left:3px solid var(--red); background:#FFF5F5; }
+  .rank-row.r2 { border-left:3px solid #FB923C; }
+  .rank-row.r3 { border-left:3px solid #FCD34D; }
+  .rank-pos { font-family:'Syne',sans-serif; font-size:1rem; font-weight:800; color:var(--muted); min-width:20px; text-align:center; }
+  .rank-row.r1 .rank-pos { color:var(--red); }
+  .rank-persona { font-family:'Syne',sans-serif; font-size:0.9rem; font-weight:700; flex:1; }
+  .rank-detail { font-size:0.65rem; color:var(--muted); }
+  .rank-count { display:flex; align-items:baseline; gap:3px; }
+  .rank-count strong { font-family:'Syne',sans-serif; font-size:1.2rem; font-weight:800; color:var(--red); }
+  .rank-count span { font-size:0.62rem; color:var(--red); }
+  .rank-empty { font-size:0.75rem; color:var(--muted); padding:1.2rem; text-align:center; border:1px dashed var(--border); border-radius:8px; }
+
+  /* DETALLE POR SEMANA */
+  .summary-week-block { margin-bottom:1.8rem; }
+  .week-block-label { font-size:0.65rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); margin-bottom:0.7rem; display:flex; align-items:center; gap:8px; }
+  .week-block-label::after { content:''; flex:1; height:1px; background:var(--border); }
+  .summary-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:0.6rem; }
+  .s-card { background:white; border:1px solid var(--border); border-radius:8px; padding:0.8rem 1rem; display:flex; flex-direction:column; gap:3px; }
+  .s-card.done   { border-left:3px solid var(--green); }
+  .s-card.incump { border-left:3px solid var(--red); background:#FFF5F5; }
+  .s-card.pending { opacity:0.55; }
+  .sc-persona { font-family:'Syne',sans-serif; font-size:0.9rem; font-weight:700; }
+  .sc-zona  { font-size:0.62rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em; }
+  .sc-date  { font-size:0.62rem; color:var(--muted); margin-top:1px; }
+  .sc-status { font-size:0.68rem; font-weight:500; margin-top:4px; }
+  .sc-status.ok   { color:#16A34A; }
+  .sc-status.fail { color:var(--red); }
+  .sc-status.pend { color:var(--muted); }
+  .sc-note { font-size:0.6rem; color:var(--muted); font-style:italic; margin-top:2px; }
+
+  .summary-empty { text-align:center; padding:2.5rem 1rem; font-size:0.75rem; color:var(--muted); border:1px dashed var(--border); border-radius:8px; line-height:1.8; }
+
+  /* RESET BANNER */
+  .reset-banner { background:#FFF8E7; border:1px solid #F0D070; border-radius:6px; padding:0.8rem 1rem; margin-bottom:1.5rem; font-size:0.7rem; color:#7A6010; display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
+  .reset-banner strong { font-weight:500; }
+
+  footer { margin-top:3rem; border-top:1px solid var(--border); padding-top:1rem; font-size:0.62rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; display:flex; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; }
+  @keyframes fadeUp  { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes slideUp { from{transform:translateY(60px);opacity:0}  to{transform:translateY(0);opacity:1} }
+  @media(max-width:500px){ .day-row{grid-template-columns:76px 1fr auto;} .today-card{padding:1.4rem 1.2rem;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="logo">LIMPIE<span>ZA</span><br>DEL DEPA</div>
+    <div class="meta">
+      <div id="date-display">—</div>
+      <div>Semana <strong id="week-display">—</strong> de 3</div>
+    </div>
+  </header>
+
+  <div class="today-card" id="today-card" onclick="openTodayModal()">
+    <div class="today-label" id="today-label">▸ Tarea de hoy</div>
+    <div class="today-task" id="today-task">Cargando...</div>
+    <div class="today-details" id="today-details">—</div>
+    <div id="today-done-badge" style="display:none" class="done-badge">✓ Completada</div>
+    <div class="tap-hint" id="today-tap-hint">Toca para reportar</div>
+  </div>
+
+  <div class="controls">
+    <div class="week-tabs">
+      <button class="week-tab" data-w="0" onclick="setWeek(0)">S1</button>
+      <button class="week-tab" data-w="1" onclick="setWeek(1)">S2</button>
+      <button class="week-tab" data-w="2" onclick="setWeek(2)">S3</button>
+    </div>
+    <button id="reset-btn" onclick="resetAuto()">↺ Volver a hoy</button>
+  </div>
+
+  <div class="schedule-grid" id="schedule-grid"></div>
+
+  <!-- RESUMEN MENSUAL -->
+  <div class="summary-section">
+    <div class="summary-header">
+      <div class="summary-title">Resumen del Mes</div>
+      <div class="summary-month" id="summary-month">—</div>
+    </div>
+
+    <!-- Stats globales -->
+    <div class="stats-row" id="stats-row"></div>
+
+    <!-- Ranking de incumplimientos -->
+    <div class="ranking-block">
+      <div class="ranking-header">
+        <div class="ranking-label">Ranking incumplimientos</div>
+        <div class="rank-tabs">
+          <button class="rank-tab active" id="tab-mes" onclick="switchRank('mes')">Este mes</button>
+          <button class="rank-tab" id="tab-sem" onclick="switchRank('sem')">Esta semana</button>
+        </div>
+      </div>
+      <div class="ranking-list" id="ranking-list"></div>
+    </div>
+
+    <!-- Detalle por semana -->
+    <div id="summary-body"></div>
+  </div>
+
+  <footer>
+    <span>Horario rotativo · 3 semanas</span>
+    <span id="footer-week">Semana — activa</span>
+  </footer>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal" onclick="handleOverlayClick(event)">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-name" id="modal-name">—</div>
+      <div class="modal-zone-row">
+        <span class="modal-zone-badge" id="modal-badge">—</span>
+        <span class="modal-day-info" id="modal-day-info">—</span>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="modal-section-label">Notas / Observaciones</div>
+      <textarea class="modal-textarea" id="modal-notes" placeholder="Ej: Todo listo, se barrió a fondo..."></textarea>
+      <label class="wa-toggle">
+        <input type="checkbox" id="wa-notify" checked>
+        <span class="wa-toggle-label">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          Notificar reporte por WhatsApp
+        </span>
+      </label>
+    </div>
+    <div class="modal-actions">
+      <div class="btn-row">
+        <button class="btn btn-cancel" onclick="closeModal()">Cancelar</button>
+        <button class="btn btn-done" id="btn-done" onclick="markDone()">Marcar como Hecho</button>
+      </div>
+      <button class="btn btn-incump" onclick="reportIncump()">⚠ Reportar Incumplimiento</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const DAYS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const today = new Date();
+  const todayName = DAYS[today.getDay()];
+  const dateKey  = today.toISOString().slice(0,10);   // YYYY-MM-DD
+  const monthKey = dateKey.slice(0,7);                // YYYY-MM
+
+  let selWeek = 0, autoMode = true, modalDayIdx = -1, rankMode = 'mes';
+
+  const data = [
+    { day:'Lunes', weeks:[
+      {task:'Edgar (Cocina) + Esmeralda (Patio)', sub:'Limpieza profunda de áreas comunes', persona:'Edgar y Esmeralda', zona:'Cocina/Patio'},
+      {task:'Edgar (Patio) + Esmeralda (Cocina)',  sub:'Intercambio de zonas',              persona:'Edgar y Esmeralda', zona:'Patio/Cocina'},
+      {task:'Edgar (Cocina) + Esmeralda (Patio)',  sub:'Limpieza de inicio de semana',      persona:'Edgar y Esmeralda', zona:'Cocina/Patio'}
+    ]},
+    { day:'Martes', weeks:[
+      {task:'Bella — Baño',   sub:'Desinfección y orden',    persona:'Bella', zona:'Baño'},
+      {task:'Bella — Cocina', sub:'Limpieza de superficies', persona:'Bella', zona:'Cocina'},
+      {task:'Bella — Patio',  sub:'Barrer y organizar',      persona:'Bella', zona:'Patio'}
+    ]},
+    { day:'Miércoles', weeks:[
+      {task:'Danny — Patio',  sub:'Mantenimiento exterior',  persona:'Danny', zona:'Patio'},
+      {task:'Danny — Baño',   sub:'Limpieza general',        persona:'Danny', zona:'Baño'},
+      {task:'Danny — Cocina', sub:'Organización de alacena', persona:'Danny', zona:'Cocina'}
+    ]},
+    { day:'Jueves',  weeks:[{task:'— libre',sub:'',persona:'',zona:''},{task:'— libre',sub:'',persona:'',zona:''},{task:'— libre',sub:'',persona:'',zona:''}]},
+    { day:'Viernes', weeks:[{task:'— libre',sub:'',persona:'',zona:''},{task:'— libre',sub:'',persona:'',zona:''},{task:'— libre',sub:'',persona:'',zona:''}]},
+    { day:'Sábado', weeks:[
+      {task:'Annuar — Cocina', sub:'Limpieza de fin de semana', persona:'Annuar', zona:'Cocina'},
+      {task:'Annuar — Patio',  sub:'Orden de exteriores',       persona:'Annuar', zona:'Patio'},
+      {task:'Annuar — Patio',  sub:'Mantenimiento de áreas',    persona:'Annuar', zona:'Patio'}
+    ]},
+    { day:'Domingo', weeks:[
+      {task:'Miguel — Baño', sub:'Limpieza semanal', persona:'Miguel', zona:'Baño'},
+      {task:'Miguel — Baño', sub:'Limpieza semanal', persona:'Miguel', zona:'Baño'},
+      {task:'Miguel — Baño', sub:'Limpieza semanal', persona:'Miguel', zona:'Baño'}
+    ]}
+  ];
+
+  // ── RESET AUTOMÁTICO DE MES ──────────────────────────────────────────────
+  // Guarda el último mes visto. Si cambió, limpia los estados del día y el historial.
+  function checkMonthReset() {
+    const lastMonth = localStorage.getItem('limpieza_last_month');
+    if (lastMonth && lastMonth !== monthKey) {
+      // Nuevo mes: borrar TODO el historial y estados del mes anterior
+      const keysToDelete = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith('limpieza_') && !k.startsWith('limpieza_last_month'))) {
+          keysToDelete.push(k);
+        }
+      }
+      keysToDelete.forEach(k => localStorage.removeItem(k));
+    }
+    localStorage.setItem('limpieza_last_month', monthKey);
+  }
+
+  // ── STORAGE ──────────────────────────────────────────────────────────────
+  function getState(dayName) {
+    try { return JSON.parse(localStorage.getItem(`limpieza_${dateKey}_${dayName}`)) || {done:false,notes:'',time:null,incump:false,incumpTime:null}; }
+    catch { return {done:false,notes:'',time:null,incump:false,incumpTime:null}; }
+  }
+  function saveState(dayName, state) {
+    localStorage.setItem(`limpieza_${dateKey}_${dayName}`, JSON.stringify(state));
+    updateHistory(dayName, state);
+  }
+
+  function getHistory() { try { return JSON.parse(localStorage.getItem(`limpieza_history_${monthKey}`)) || []; } catch { return []; } }
+  function updateHistory(dayName, state) {
+    const entry = data.find(d => d.day === dayName);
+    if (!entry) return;
+    const t = entry.weeks[calcWeek()];
+    if (!t || isLibre(t.task)) return;
+    const hist = getHistory();
+    const i = hist.findIndex(h => h.dateKey === dateKey && h.dayName === dayName);
+    const rec = { dateKey, dayName, weekIdx:calcWeek(), persona:t.persona, zona:t.zona,
+                  done:state.done, time:state.time, incump:state.incump,
+                  incumpTime:state.incumpTime, notes:state.notes };
+    if (i >= 0) hist[i] = rec; else hist.push(rec);
+    localStorage.setItem(`limpieza_history_${monthKey}`, JSON.stringify(hist));
+  }
+
+  // ── UTILS ─────────────────────────────────────────────────────────────────
+  function calcWeek() { const ref=new Date(2026,1,23); return Math.floor(Math.floor(Math.abs(today-ref)/864e5)/7)%3; }
+  function isLibre(t) { return t.startsWith('—'); }
+  function setWeek(w) { selWeek=w; autoMode=false; render(); }
+  function resetAuto() { autoMode=true; render(); }
+  function zoneBadgeClass(z) { z=z.toLowerCase(); if(z.includes('baño')) return 'badge-baño'; if(z.includes('cocina')) return 'badge-cocina'; if(z.includes('patio')) return 'badge-patio'; return 'badge-libre'; }
+  function waLink(msg) { return `https://wa.me/?text=${encodeURIComponent(msg)}`; }
+  function fmt(iso) { if(!iso) return ''; return new Date(iso).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}); }
+  function fmtDate(iso) { if(!iso) return ''; return new Date(iso+'T00:00:00').toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'}); }
+
+  // ── RANKING ───────────────────────────────────────────────────────────────
+  function switchRank(mode) {
+    rankMode = mode;
+    document.getElementById('tab-mes').classList.toggle('active', mode==='mes');
+    document.getElementById('tab-sem').classList.toggle('active', mode==='sem');
+    renderRanking();
+  }
+
+  function buildRanking(records) {
+    // Agrupar incumplimientos por persona
+    const counts = {};
+    records.filter(h => h.incump).forEach(h => {
+      // Para personas múltiples (ej "Edgar y Esmeralda") separar
+      const personas = h.persona.split(/\s+y\s+/i);
+      personas.forEach(p => {
+        p = p.trim();
+        if (!counts[p]) counts[p] = { count:0, zonas:[] };
+        counts[p].count++;
+        if (!counts[p].zonas.includes(h.zona)) counts[p].zonas.push(h.zona);
+      });
+    });
+    return Object.entries(counts)
+      .map(([persona, v]) => ({persona, count:v.count, zonas:v.zonas}))
+      .sort((a,b) => b.count - a.count);
+  }
+
+  function renderRanking() {
+    const hist = getHistory();
+    let records;
+    if (rankMode === 'sem') {
+      // Solo la semana actual (weekIdx = selWeek)
+      records = hist.filter(h => h.weekIdx === selWeek);
+    } else {
+      records = hist;
+    }
+    const ranking = buildRanking(records);
+    const el = document.getElementById('ranking-list');
+    if (ranking.length === 0) {
+      el.innerHTML = `<div class="rank-empty">🎉 Nadie ha incumplido ${rankMode==='sem'?'esta semana':'este mes'}.</div>`;
+      return;
+    }
+    const medals = ['r1','r2','r3'];
+    el.innerHTML = ranking.map((r,i) => `
+      <div class="rank-row ${medals[i]||''}">
+        <div class="rank-pos">${i+1}</div>
+        <div>
+          <div class="rank-persona">${r.persona}</div>
+          <div class="rank-detail">${r.zonas.join(', ')}</div>
+        </div>
+        <div class="rank-count">
+          <strong>${r.count}</strong>
+          <span>incumplimiento${r.count!==1?'s':''}</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ── MODAL ─────────────────────────────────────────────────────────────────
+  function openModal(idx) {
+    modalDayIdx = idx;
+    const d = data[idx], t = d.weeks[selWeek], state = getState(d.day);
+    document.getElementById('modal-name').textContent = t.persona || d.day;
+    document.getElementById('modal-day-info').textContent = `${d.day.toUpperCase()} · SEM ${selWeek+1}`;
+    const badge = document.getElementById('modal-badge');
+    badge.textContent = t.zona || 'Libre';
+    badge.className = `modal-zone-badge ${zoneBadgeClass(t.zona||'')}`;
+    document.getElementById('modal-notes').value = state.notes || '';
+    const btn = document.getElementById('btn-done');
+    btn.textContent = state.done ? '✓ Marcar como Pendiente' : 'Marcar como Hecho';
+    btn.className = `btn btn-done${state.done?' is-done-state':''}`;
+    document.getElementById('modal').classList.add('open');
+  }
+  function openTodayModal() {
+    const idx = data.findIndex(d => d.day===todayName);
+    if (idx===-1 || isLibre(data[idx].weeks[selWeek].task)) return;
+    openModal(idx);
+  }
+  function closeModal() { document.getElementById('modal').classList.remove('open'); }
+  function handleOverlayClick(e) { if(e.target===document.getElementById('modal')) closeModal(); }
+
+  function markDone() {
+    if (modalDayIdx===-1) return;
+    const d=data[modalDayIdx], t=d.weeks[selWeek], state=getState(d.day);
+    const notes=document.getElementById('modal-notes').value.trim();
+    const waChecked=document.getElementById('wa-notify').checked;
+    const newDone=!state.done, newTime=newDone?new Date().toISOString():null;
+    saveState(d.day,{done:newDone,time:newTime,notes,incump:newDone?false:state.incump,incumpTime:newDone?null:state.incumpTime});
+    if(waChecked&&newDone) window.open(waLink(`✅ *Limpieza completada*\n${t.persona} limpió el ${t.zona} el ${d.day} (Sem ${selWeek+1}) a las ${fmt(newTime)}${notes?'\n📝 '+notes:''}`), '_blank');
+    closeModal(); render(); renderSummary();
+  }
+
+  function reportIncump() {
+    if (modalDayIdx===-1) return;
+    const d=data[modalDayIdx], t=d.weeks[selWeek];
+    const notes=document.getElementById('modal-notes').value.trim();
+    const state=getState(d.day), incumpTime=new Date().toISOString();
+    saveState(d.day,{done:false,time:null,incump:true,incumpTime,notes});
+    showToast(`⚠️ Incumplimiento registrado — ${t.persona} (${t.zona})`);
+    closeModal(); render(); renderSummary();
+  }
+
+  function showToast(msg) {
+    let t=document.getElementById('toast');
+    if(!t){t=document.createElement('div');t.id='toast';t.style.cssText="position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:#1E293B;color:white;font-family:'DM Mono',monospace;font-size:0.75rem;padding:0.75rem 1.4rem;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.25);z-index:999;white-space:nowrap;transition:opacity 0.3s;";document.body.appendChild(t);}
+    t.textContent=msg;t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(()=>{t.style.opacity='0';},3000);
+  }
+
+  // ── RENDER SCHEDULE ───────────────────────────────────────────────────────
+  function render() {
+    if(autoMode) selWeek=calcWeek();
+    document.getElementById('date-display').textContent=today.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'}).toUpperCase();
+    document.getElementById('week-display').textContent=selWeek+1;
+    document.getElementById('footer-week').textContent=`Semana ${selWeek+1} activa`;
+    document.getElementById('reset-btn').style.display=autoMode?'none':'block';
+    document.querySelectorAll('.week-tab').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.w)===selWeek));
+
+    const te=data.find(d=>d.day===todayName), tt=te?te.weeks[selWeek]:{task:'— libre',sub:'',zona:''};
+    const tl=isLibre(tt.task), ts=te?getState(te.day):{done:false,time:null};
+    const card=document.getElementById('today-card');
+    document.getElementById('today-task').textContent=tl?'🎉 Día libre':tt.task;
+    document.getElementById('today-details').textContent=tl?'Sin tareas hoy — a descansar.':tt.sub;
+    const db=document.getElementById('today-done-badge');
+    db.textContent=ts.done&&ts.time?`✓ Completada a las ${fmt(ts.time)}`:'✓ Completada';
+    db.style.display=ts.done?'inline-flex':'none';
+    document.getElementById('today-tap-hint').style.display=tl?'none':'block';
+    document.getElementById('today-label').textContent=ts.done?'✓ Completada':'▸ Tarea de hoy';
+    card.className=`today-card${ts.done?' is-done':''}`;
+    card.style.cursor=tl?'default':'pointer';
+
+    const grid=document.getElementById('schedule-grid');
+    grid.innerHTML='';
+    data.forEach((d,idx)=>{
+      const t=d.weeks[selWeek],isT=d.day===todayName,lib=isLibre(t.task),state=getState(d.day);
+      const row=document.createElement('div');
+      row.className=`day-row${isT?' is-today':''}${lib?' is-libre':''}${state.done&&!lib?' is-done':''}${state.incump&&!lib?' is-incump':''}`;
+      if(!lib) row.onclick=()=>openModal(idx);
+      const timeHtml=!lib&&state.done&&state.time?`<div class="task-time">✓ ${fmt(state.time)}</div>`:!lib&&state.incump&&state.incumpTime?`<div class="task-time is-incump">⚠ ${fmt(state.incumpTime)}</div>`:'';
+      row.innerHTML=`
+        <div class="day-name-cell"><div class="day-tag">${isT?'► HOY':'DÍA'}</div><div class="day-name">${d.day}</div></div>
+        <div class="task-cell"><div class="task-name${lib?' libre':''}${state.done&&!lib?' done-text':''}">${t.task}</div>${!lib?`<div class="task-sub">${t.sub}</div>${timeHtml}`:''}</div>
+        <div class="status-cell">${!lib?`<div class="check-circle">${state.done?'✓':state.incump?'!':''}</div>`:''}</div>
+      `;
+      grid.appendChild(row);
+    });
+  }
+
+  // ── RENDER SUMMARY ────────────────────────────────────────────────────────
+  function renderSummary() {
+    const hist=getHistory();
+    document.getElementById('summary-month').textContent=today.toLocaleDateString('es-MX',{month:'long',year:'numeric'}).toUpperCase();
+    const done=hist.filter(h=>h.done).length, incump=hist.filter(h=>h.incump).length, pend=hist.length-done-incump;
+    document.getElementById('stats-row').innerHTML=`
+      <div class="stat-pill"><span class="dot dot-green"></span>${done} completada${done!==1?'s':''}</div>
+      <div class="stat-pill"><span class="dot dot-red"></span>${incump} incumplimiento${incump!==1?'s':''}</div>
+      <div class="stat-pill"><span class="dot dot-gray"></span>${pend} pendiente${pend!==1?'s':''}</div>
+    `;
+    renderRanking();
+
+    const body=document.getElementById('summary-body');
+    body.innerHTML='';
+    if(hist.length===0){ body.innerHTML=`<div class="summary-empty">Aún no hay registros este mes.<br>Las tareas marcadas aparecerán aquí por semana.</div>`; return; }
+    for(let w=0;w<3;w++){
+      const recs=hist.filter(h=>h.weekIdx===w);
+      if(!recs.length) continue;
+      const block=document.createElement('div'); block.className='summary-week-block';
+      const label=document.createElement('div'); label.className='week-block-label'; label.textContent=`Semana ${w+1}`; block.appendChild(label);
+      const cards=document.createElement('div'); cards.className='summary-cards';
+      recs.forEach(h=>{
+        const c=document.createElement('div');
+        c.className=`s-card ${h.done?'done':h.incump?'incump':'pending'}`;
+        const st=h.done?`<div class="sc-status ok">✓ Completada${h.time?' · '+fmt(h.time):''}</div>`:h.incump?`<div class="sc-status fail">⚠ Incumplimiento${h.incumpTime?' · '+fmt(h.incumpTime):''}</div>`:`<div class="sc-status pend">— Pendiente</div>`;
+        c.innerHTML=`<div class="sc-persona">${h.persona}</div><div class="sc-zona">${h.zona}</div><div class="sc-date">${fmtDate(h.dateKey)} · ${h.dayName}</div>${st}${h.notes?`<div class="sc-note">📝 ${h.notes}</div>`:''}`;
+        cards.appendChild(c);
+      });
+      block.appendChild(cards); body.appendChild(block);
+    }
+  }
+
+  window.onload = () => { checkMonthReset(); render(); renderSummary(); };
+</script>
+</body>
+</html>
