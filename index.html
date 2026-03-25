@@ -471,11 +471,19 @@
       </div>
       <div>
         <div class="field-label">📷 Foto como evidencia</div>
-        <div class="photo-upload-area" id="photo-upload-label" onclick="triggerPhotoInput()">
-          <span>📷</span>
-          <span>Tomar foto o elegir de galería</span>
+        <div id="photo-upload-label">
+          <div style="display:flex;gap:8px;">
+            <div class="photo-upload-area" style="flex:1" onclick="triggerCamera()">
+              <span>📷</span>
+              <span>Cámara</span>
+            </div>
+            <div class="photo-upload-area" style="flex:1" onclick="triggerGallery()">
+              <span>🖼️</span>
+              <span>Galería</span>
+            </div>
+          </div>
         </div>
-        <img id="photo-preview" class="photo-preview-img" alt="Vista previa" onclick="triggerPhotoInput()">
+        <img id="photo-preview" class="photo-preview-img" alt="Vista previa" onclick="triggerGallery()">
       </div>
       <label class="wa-row">
         <input type="checkbox" id="wa-notify" checked>
@@ -605,23 +613,24 @@
 
   function checkOverdue(){
     const data=getData(),overdue=[],cw=calcWeek();
-    // Only check days that: had a real task this week AND are within the current week cycle
-    // A "week cycle" starts on Monday. Find Monday of current week.
     const monday=new Date(today);
-    const dayOfWeek=today.getDay()===0?7:today.getDay(); // Mon=1..Sun=7
+    const dayOfWeek=today.getDay()===0?7:today.getDay();
     monday.setDate(today.getDate()-(dayOfWeek-1));
     monday.setHours(0,0,0,0);
 
     for(let i=1;i<=6;i++){
       const d=new Date(today);d.setDate(d.getDate()-i);
-      // Only look back within the current week (Mon-Sun)
       if(d<monday) break;
-      const dk=d.toISOString().slice(0,10),dn=DAYS[d.getDay()];
+      const dn=DAYS[d.getDay()];
       const entry=data.find(x=>x.day===dn);if(!entry)continue;
       const t=entry.weeks[cw];if(!t||isLibre(t.task))continue;
-      const key=`${dk}_w${cw}_${dn}`.replace(/[^a-zA-Z0-9_]/g,'_');
-      const state=fbStates[key];
-      if(!state||(!state.done&&!state.incump))overdue.push({persona:t.persona,day:dn,daysAgo:i});
+      // Search all states for this day+week — regardless of which dateKey was used
+      const dayKey=dn.replace(/[^a-zA-Z0-9_]/g,'_');
+      const weekPart=`_w${cw}_`;
+      const found=Object.entries(fbStates).some(([k,v])=>
+        k.includes(weekPart) && k.endsWith('_'+dayKey) && (v.done||v.incump)
+      );
+      if(!found) overdue.push({persona:t.persona,day:dn,daysAgo:i});
     }
     const el=document.getElementById('overdue-alert');
     if(overdue.length){
@@ -666,9 +675,13 @@
   }
 
   // ── PHOTO ─────────────────────────────────────────────────────────────────
-  function triggerPhotoInput(){
-    document.getElementById('photo-input').value='';
-    document.getElementById('photo-input').click();
+  function triggerCamera(){
+    document.getElementById('photo-input-camera').value='';
+    document.getElementById('photo-input-camera').click();
+  }
+  function triggerGallery(){
+    document.getElementById('photo-input-gallery').value='';
+    document.getElementById('photo-input-gallery').click();
   }
 
   function handlePhoto(input){
@@ -757,7 +770,8 @@
     const uploadLabel=document.getElementById('photo-upload-label');
     if(state.photoUrl){preview.src=state.photoUrl;preview.style.display='block';uploadLabel.style.display='none';}
     else{preview.src='';preview.style.display='none';uploadLabel.style.display='flex';}
-    document.getElementById('photo-input').value='';
+    document.getElementById('photo-input-gallery').value='';
+    document.getElementById('photo-input-camera').value='';
     const btn=document.getElementById('btn-done');
     btn.textContent=state.done?'↩ Desmarcar':'✅ Marcar como Hecho';
     btn.className=`btn-sheet btn-done-s${state.done?' done-state':''}`;
@@ -1049,6 +1063,7 @@
 
   window.onload=()=>{ render(); initFirebase(); initChat(); };
 </script>
-<input type="file" id="photo-input" accept="image/*" style="display:none" onchange="handlePhoto(this)">
+<input type="file" id="photo-input-gallery" accept="image/*" style="display:none" onchange="handlePhoto(this)">
+<input type="file" id="photo-input-camera" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this)">
 </body>
 </html>
