@@ -861,29 +861,52 @@
     document.getElementById('tab-sem').classList.toggle('active',mode==='sem');
     renderRanking();
   }
-  function buildRanking(records){
-    const counts={};
-    records.filter(h=>h.incump).forEach(h=>{
-      h.persona.split(/\s+y\s+/i).forEach(p=>{
-        p=p.trim();if(!counts[p])counts[p]={count:0,zonas:[]};
-        counts[p].count++;if(!counts[p].zonas.includes(h.zona))counts[p].zonas.push(h.zona);
+
+  function buildFullRanking(records) {
+    // Build ranking combining points (+10 done, -5 incump) AND incump count per person
+    const stats = {};
+    records.forEach(h => {
+      h.persona.split(/\s+y\s+/i).forEach(p => {
+        p = p.trim();
+        if (!stats[p]) stats[p] = { points: 0, incump: 0, done: 0, zonas: [] };
+        if (h.done)   { stats[p].points += 10; stats[p].done++; }
+        if (h.incump) { stats[p].points -= 5;  stats[p].incump++; if (!stats[p].zonas.includes(h.zona)) stats[p].zonas.push(h.zona); }
       });
     });
-    return Object.entries(counts).map(([persona,v])=>({persona,count:v.count,zonas:v.zonas})).sort((a,b)=>b.count-a.count);
+    return Object.entries(stats)
+      .map(([persona, v]) => ({ persona, ...v }))
+      .sort((a, b) => b.points - a.points);
   }
+
   function renderRanking(){
-    const hist=getHistory(viewingMonth);
-    const records=rankMode==='sem'?hist.filter(h=>h.weekIdx===selWeek):hist;
-    const ranking=buildRanking(records);
-    const el=document.getElementById('ranking-list');
-    if(!ranking.length){el.innerHTML=`<div class="rank-empty">🎉 ¡Nadie ha incumplido ${rankMode==='sem'?'esta semana':'este período'}!</div>`;return;}
-    const medals=['first','',''];
-    el.innerHTML=ranking.map((r,i)=>`
+    const hist = getHistory(viewingMonth);
+    const records = rankMode === 'sem' ? hist.filter(h => h.weekIdx === selWeek) : hist;
+    const ranking = buildFullRanking(records);
+    const el = document.getElementById('ranking-list');
+    if (!ranking.length) {
+      el.innerHTML = `<div class="rank-empty">📋 Sin registros ${rankMode==='sem'?'esta semana':'este período'} aún.</div>`;
+      return;
+    }
+    const posIcons = ['🥇','🥈','🥉'];
+    el.innerHTML = ranking.map((r, i) => {
+      const ptColor = r.points >= 0 ? 'var(--green)' : 'var(--red)';
+      const ptSign  = r.points >= 0 ? '+' : '';
+      return `
       <div class="rank-row">
-        <div class="rank-pos-num ${medals[i]||''}">${['🥇','🥈','🥉'][i]||i+1}</div>
-        <div class="rank-info"><div class="rank-pname">${r.persona}</div><div class="rank-pzone">${r.zonas.join(', ')}</div></div>
-        <div class="rank-badge">${r.count} ×</div>
-      </div>`).join('');
+        <div class="rank-pos-num ${i===0?'first':''}">${posIcons[i] || i+1}</div>
+        <div class="rank-info">
+          <div class="rank-pname" style="display:flex;align-items:center;gap:6px;">
+            <span class="roomie-dot" style="background:${getRoomieColor(r.persona)}"></span>
+            ${r.persona}
+          </div>
+          <div class="rank-pzone">✅ ${r.done} completadas · ⚠️ ${r.incump} incumplidas</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-size:18px;font-weight:800;color:${ptColor};font-family:'Inter',sans-serif;">${ptSign}${r.points}</div>
+          <div style="font-size:10px;color:var(--text3);">puntos</div>
+        </div>
+      </div>`;
+    }).join('');
   }
 
   // ── HISTORY TABS ──────────────────────────────────────────────────────────
