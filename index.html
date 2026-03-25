@@ -236,6 +236,9 @@
   .photo-upload-area span:first-child { font-size:24px; }
   .photo-upload-area span:last-child { font-size:13px; color:var(--text2); font-weight:500; }
   .photo-preview-img { width:100%; max-height:180px; object-fit:cover; border-radius:var(--radius-sm); display:none; }
+  .photo-preview-wrap { position:relative; display:none; }
+  .photo-preview-wrap img { width:100%; max-height:180px; object-fit:cover; border-radius:var(--radius-sm); display:block; }
+  .photo-remove-btn { position:absolute; top:8px; right:8px; background:rgba(0,0,0,0.6); color:white; border:none; border-radius:50%; width:28px; height:28px; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
   #photo-input { display:none; }
 
   .wa-row { display:flex; align-items:center; gap:10px; background:#F0FDF4; border-radius:var(--radius-sm); padding:12px 14px; }
@@ -483,7 +486,10 @@
             </div>
           </div>
         </div>
-        <img id="photo-preview" class="photo-preview-img" alt="Vista previa" onclick="triggerGallery()">
+        <div class="photo-preview-wrap" id="photo-preview-wrap">
+          <img id="photo-preview" alt="Vista previa">
+          <button class="photo-remove-btn" onclick="removePhoto()" title="Quitar foto">✕</button>
+        </div>
       </div>
       <label class="wa-row">
         <input type="checkbox" id="wa-notify" checked>
@@ -709,7 +715,8 @@
         canvas.getContext('2d').drawImage(img,0,0,w,h);
         pendingPhotoData=canvas.toDataURL('image/jpeg',0.7);
         const preview=document.getElementById('photo-preview');
-        preview.src=pendingPhotoData;preview.style.display='block';
+        preview.src=pendingPhotoData;
+        document.getElementById('photo-preview-wrap').style.display='block';
         document.getElementById('photo-upload-label').style.display='none';
       };
       img.src=e.target.result;
@@ -717,6 +724,21 @@
     reader.readAsDataURL(file);
   }
   async function uploadPhoto(){if(!pendingPhotoData)return null;return pendingPhotoData;}
+
+  function removePhoto(){
+    pendingPhotoData=null;
+    document.getElementById('photo-preview').src='';
+    document.getElementById('photo-preview-wrap').style.display='none';
+    document.getElementById('photo-upload-label').style.display='flex';
+    document.getElementById('photo-input-gallery').value='';
+    document.getElementById('photo-input-camera').value='';
+    // If task already saved with photo, save without it immediately
+    if(modalDayIdx===-1) return;
+    const data=getData(),d=data[modalDayIdx],state=getState(d.day);
+    if(state.photoUrl){
+      saveState(d.day,{...state,photoUrl:null});
+    }
+  }
 
   // ── POINTS ────────────────────────────────────────────────────────────────
   function calcPoints(){
@@ -779,8 +801,9 @@
     document.getElementById('modal-notes').value=state.notes||'';
     const preview=document.getElementById('photo-preview');
     const uploadLabel=document.getElementById('photo-upload-label');
-    if(state.photoUrl){preview.src=state.photoUrl;preview.style.display='block';uploadLabel.style.display='none';}
-    else{preview.src='';preview.style.display='none';uploadLabel.style.display='flex';}
+    const previewWrap=document.getElementById('photo-preview-wrap');
+    if(state.photoUrl){preview.src=state.photoUrl;previewWrap.style.display='block';uploadLabel.style.display='none';}
+    else{preview.src='';previewWrap.style.display='none';uploadLabel.style.display='flex';}
     document.getElementById('photo-input-gallery').value='';
     document.getElementById('photo-input-camera').value='';
     const btn=document.getElementById('btn-done');
