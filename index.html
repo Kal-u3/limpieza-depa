@@ -147,6 +147,8 @@
     background:transparent; color:transparent; transition:all 0.2s; flex-shrink:0;
   }
   .day-card.is-done .check-btn { background:var(--green); border-color:var(--green); color:white; }
+  .unmark-btn { font-size:11px; font-weight:600; color:var(--text3); background:var(--surface2); border:1px solid var(--border); border-radius:20px; padding:3px 10px; cursor:pointer; white-space:nowrap; transition:all 0.15s; }
+  .unmark-btn:hover { background:#FFF2F2; color:var(--red); border-color:#FFCDD2; }
   .day-card.is-incump .check-btn { background:var(--red); border-color:var(--red); color:white; font-size:11px; }
   .photo-thumb { width:32px; height:32px; border-radius:8px; object-fit:cover; border:2px solid var(--border); cursor:pointer; }
 
@@ -807,8 +809,8 @@
     document.getElementById('photo-input-gallery').value='';
     document.getElementById('photo-input-camera').value='';
     const btn=document.getElementById('btn-done');
-    btn.textContent=state.done?'↩ Desmarcar':'✅ Marcar como Hecho';
-    btn.className=`btn-sheet btn-done-s${state.done?' done-state':''}`;
+    btn.textContent='✅ Marcar como Hecho';
+    btn.className='btn-sheet btn-done-s';
     document.getElementById('modal').classList.add('open');
   }
   function openTodayModal(){
@@ -834,6 +836,16 @@
       if(waChecked)window.open(waLink(`✅ *Limpieza completada*\n${t.persona} limpió ${t.zona} · ${d.day} Sem ${selWeek+1} · ${fmt(newTime)}${notes?'\n📝 '+notes:''}`), '_blank');
     }
     closeModal();
+  }
+
+  function unmarkTask(dayName){
+    // Full reset of the state for this day
+    const key = existingStateKey(dayName);
+    db.ref(`states/${monthKey}/${key}`).remove();
+    // Also remove from history
+    const histKey2 = key; 
+    db.ref(`history/${monthKey}/${histKey2}`).remove();
+    showToast('↩ Tarea desmarcada');
   }
 
   function reportIncump(){
@@ -1027,6 +1039,7 @@
         </div>
         <div class="day-right">
           ${photoThumb}
+          ${state.done&&!lib?`<button class="unmark-btn" onclick="event.stopPropagation();unmarkTask('${d.day}')">↩ Desmarcar</button>`:''}
           ${!lib?`<div class="check-btn">${checkContent}</div>`:''}
         </div>
       `;
