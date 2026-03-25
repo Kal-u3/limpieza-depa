@@ -471,12 +471,11 @@
       </div>
       <div>
         <div class="field-label">📷 Foto como evidencia</div>
-        <label class="photo-upload-area" for="photo-input" id="photo-upload-label">
+        <div class="photo-upload-area" id="photo-upload-label" onclick="triggerPhotoInput()">
           <span>📷</span>
           <span>Tomar foto o elegir de galería</span>
-        </label>
-        <input type="file" id="photo-input" accept="image/*" onchange="handlePhoto(this)">
-        <img id="photo-preview" class="photo-preview-img" alt="Vista previa">
+        </div>
+        <img id="photo-preview" class="photo-preview-img" alt="Vista previa" onclick="triggerPhotoInput()">
       </div>
       <label class="wa-row">
         <input type="checkbox" id="wa-notify" checked>
@@ -667,6 +666,11 @@
   }
 
   // ── PHOTO ─────────────────────────────────────────────────────────────────
+  function triggerPhotoInput(){
+    document.getElementById('photo-input').value='';
+    document.getElementById('photo-input').click();
+  }
+
   function handlePhoto(input){
     const file=input.files[0];if(!file)return;
     const reader=new FileReader();
@@ -1045,5 +1049,6 @@
 
   window.onload=()=>{ render(); initFirebase(); initChat(); };
 </script>
+<input type="file" id="photo-input" accept="image/*" style="display:none" onchange="handlePhoto(this)">
 </body>
 </html>
