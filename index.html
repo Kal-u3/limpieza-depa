@@ -650,6 +650,15 @@
 
   // ── STORAGE ──────────────────────────────────────────────────────────────
   function stateKey(dayName){return`${dateKey}_w${selWeek}_${dayName}`.replace(/[^a-zA-Z0-9_]/g,'_');}
+  function existingStateKey(dayName){
+    // Find the actual Firebase key for this day+week if it already exists
+    const dn=dayName.replace(/[^a-zA-Z0-9_]/g,'_');
+    const weekPart=`_w${selWeek}_`;
+    const match=Object.keys(fbStates).find(k=>
+      k.includes(weekPart)&&k.endsWith('_'+dn)
+    );
+    return match||stateKey(dayName);
+  }
   function getState(dayName){
     // Search all fbStates for this dayName + selWeek, regardless of dateKey
     const dn = dayName.replace(/[^a-zA-Z0-9_]/g,'_');
@@ -661,7 +670,7 @@
     if (match) return match[1];
     return {done:false,notes:'',time:null,incump:false,incumpTime:null,photoUrl:null};
   }
-  function saveState(dayName,state){const s={...state,weekIdx:selWeek};db.ref(`states/${monthKey}/${stateKey(dayName)}`).set(s);updateHistory(dayName,s);}
+  function saveState(dayName,state){const s={...state,weekIdx:selWeek};const key=existingStateKey(dayName);db.ref(`states/${monthKey}/${key}`).set(s);updateHistory(dayName,s);}
   function getHistory(mk){const src=mk===monthKey?fbHistory:(fbAllHistory[mk]||{});return Object.values(src);}
   function updateHistory(dayName,state){
     const data=getData(),entry=data.find(d=>d.day===dayName);if(!entry)return;
