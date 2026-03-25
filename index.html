@@ -863,24 +863,28 @@
   }
 
   function buildFullRanking(records) {
-    const DAYS_ORDER = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
     const stats = {};
     records.forEach(h => {
       h.persona.split(/\s+y\s+/i).forEach(p => {
         p = p.trim();
         if (!stats[p]) stats[p] = { points: 0, incump: 0, done: 0, late: 0, zonas: [] };
         if (h.done) {
-          // Check if completed on the correct day
-          // h.dateKey = date when marked, h.dayName = assigned day
-          const markedDate = new Date(h.dateKey + 'T00:00:00');
-          const markedDayName = DAYS[markedDate.getDay()];
+          // Use h.time (actual timestamp of completion) to get the real day it was marked
+          // Fall back to h.dateKey if time not available
+          let markedDayName;
+          if (h.time) {
+            const markedDate = new Date(h.time);
+            markedDayName = DAYS[markedDate.getDay()];
+          } else {
+            const markedDate = new Date(h.dateKey + 'T12:00:00');
+            markedDayName = DAYS[markedDate.getDay()];
+          }
           const onTime = markedDayName === h.dayName;
+          stats[p].done++;
           if (onTime) {
             stats[p].points += 10;
-            stats[p].done++;
           } else {
             stats[p].points += 5;
-            stats[p].done++;
             stats[p].late++;
           }
         }
