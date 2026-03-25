@@ -863,14 +863,32 @@
   }
 
   function buildFullRanking(records) {
-    // Build ranking combining points (+10 done, -5 incump) AND incump count per person
+    const DAYS_ORDER = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
     const stats = {};
     records.forEach(h => {
       h.persona.split(/\s+y\s+/i).forEach(p => {
         p = p.trim();
-        if (!stats[p]) stats[p] = { points: 0, incump: 0, done: 0, zonas: [] };
-        if (h.done)   { stats[p].points += 10; stats[p].done++; }
-        if (h.incump) { stats[p].points -= 5;  stats[p].incump++; if (!stats[p].zonas.includes(h.zona)) stats[p].zonas.push(h.zona); }
+        if (!stats[p]) stats[p] = { points: 0, incump: 0, done: 0, late: 0, zonas: [] };
+        if (h.done) {
+          // Check if completed on the correct day
+          // h.dateKey = date when marked, h.dayName = assigned day
+          const markedDate = new Date(h.dateKey + 'T00:00:00');
+          const markedDayName = DAYS[markedDate.getDay()];
+          const onTime = markedDayName === h.dayName;
+          if (onTime) {
+            stats[p].points += 10;
+            stats[p].done++;
+          } else {
+            stats[p].points += 5;
+            stats[p].done++;
+            stats[p].late++;
+          }
+        }
+        if (h.incump) {
+          stats[p].points -= 5;
+          stats[p].incump++;
+          if (!stats[p].zonas.includes(h.zona)) stats[p].zonas.push(h.zona);
+        }
       });
     });
     return Object.entries(stats)
@@ -891,6 +909,7 @@
     el.innerHTML = ranking.map((r, i) => {
       const ptColor = r.points >= 0 ? 'var(--green)' : 'var(--red)';
       const ptSign  = r.points >= 0 ? '+' : '';
+      const lateText = r.late > 0 ? ` · 🕐 ${r.late} tarde` : '';
       return `
       <div class="rank-row">
         <div class="rank-pos-num ${i===0?'first':''}">${posIcons[i] || i+1}</div>
@@ -899,7 +918,7 @@
             <span class="roomie-dot" style="background:${getRoomieColor(r.persona)}"></span>
             ${r.persona}
           </div>
-          <div class="rank-pzone">✅ ${r.done} completadas · ⚠️ ${r.incump} incumplidas</div>
+          <div class="rank-pzone">✅ ${r.done-r.late} a tiempo · 🕐 ${r.late} tarde · ⚠️ ${r.incump} incumplidas</div>
         </div>
         <div style="text-align:right;flex-shrink:0;">
           <div style="font-size:18px;font-weight:800;color:${ptColor};font-family:'Inter',sans-serif;">${ptSign}${r.points}</div>
